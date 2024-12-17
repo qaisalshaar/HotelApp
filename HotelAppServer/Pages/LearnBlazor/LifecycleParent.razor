@@ -1,0 +1,87 @@
+﻿@page "/lifecycle"
+@using System.Threading
+<h3>LifecycleParent</h3>
+<div class="border">
+    <LifecycleChild CountValue="@currentCount"></LifecycleChild>
+</div>
+<p>Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<br />
+<br /> @Count <button class="btn btn-secondary ml-3" @onclick=StartCountdown>
+    Start Countdown
+</button>
+<hr />
+@foreach (var item in LifecycleMethods)
+{
+    @item;
+    <hr />
+}
+@code {
+    private int currentCount = 0;
+    private int Count { get; set; } = 5;
+    List<string> LifecycleMethods = new List<string>();
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    protected override void OnInitialized()
+    {
+        LifecycleMethods.Add("OnInitialized is invoked");
+    }
+
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    LifecycleMethods.Add("OnInitializedAsync is invoked");
+    //    await Task.Delay(1000);
+    //}
+
+    protected override void OnParametersSet()
+    {
+        LifecycleMethods.Add("OnParametersSet is invoked");
+    }
+    //protected override async Task OnParametersSetAsync()
+    //{
+    //    LifecycleMethods.Add("OnParametersSetAsync is invoked");
+    //    await Task.Delay(1000);
+    //}
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        //if (firstRender)
+        //{
+        //    currentCount = 111;
+        //}
+        //else
+        //{
+        //    currentCount = 999;
+        //}
+        LifecycleMethods.Add("OnAfterRender is invoked");
+    }
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    LifecycleMethods.Add("OnAfterRender is invoked");
+    //    await Task.Delay(1000);
+    //}
+    protected override bool ShouldRender()
+    {
+        LifecycleMethods.Add("ShouldRender is invoked");
+        return true;
+    }
+
+    void StartCountdown()
+    {
+        var timer = new Timer(TimeCallBack, null, 1000, 1000);
+    }
+
+    void TimeCallBack(object state)
+    {
+        if (Count > 0)
+        {
+            Count--;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+}
+

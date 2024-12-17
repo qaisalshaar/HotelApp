@@ -1,0 +1,133 @@
+﻿@page "/demoHotel"
+@using Model
+
+<h3>We will display hotel rooms here!</h3>
+<div class="border p-2 mt-2" style="background-color:azure">
+    <h2 class="text-info">Rooms List</h2>
+    <div class="row container">
+        <div class="col-12">
+            <h3 class="text-info">Hotel Rooms</h3>
+            <span>Rooms Selected - @SelectedRooms</span>
+        </div>
+        @foreach (var room in RoomsList)
+        {
+            <IndividualRoom OnRoomCheckBoxSelection="RoomSelectionCounterChanged"
+                            Room="room"></IndividualRoom>
+        }
+        <div class="col-12 mt-3">
+            <h4 class="text-info">Hotel Amenities</h4>
+        </div>
+        @foreach (var amenity in AmenitiesList)
+        {
+            <IndividualAmenity OnAmenitySelection="AmenitySelectionChanged" Amenity="amenity">
+                <FirstRF>
+                    @if (amenity.Id == 111 || amenity.Id == 222)
+                    {
+                        <span class="badge badge-danger">#Need Safety</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-info">#Good Service</span>
+
+                    }
+                </FirstRF>
+                <SecondRF>
+                    <span class="badge badge-info">#Free Service</span>
+                </SecondRF>
+            </IndividualAmenity>
+        }
+    </div>
+    <div class="col-12">
+        <p class="text-secondary">  Selected Amenity : @SelectedAmenity</p>
+    </div>
+</div>
+
+@code{
+    public int SelectedRooms { get; set; } = 0;
+    public string SelectedAmenity { get; set; } = "";
+
+    List<Room> RoomsList = new List<Room>();
+    List<Amenity> AmenitiesList = new List<Amenity>();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        RoomsList.Add(new Room()
+        {
+            Id = 101,
+            RoomName = "King Suite",
+            IsActive = true,
+            Price = 1200,
+            RoomProps = new List<RoomProp>()
+{
+            new RoomProp()
+            {
+                Id=1,
+                Name="Area",
+                Value="300"
+            },
+            new RoomProp()
+            {
+                Id=2,
+                Name="Occupancy",
+                Value="5"
+            }
+        }
+        });
+        RoomsList.Add(new Room()
+        {
+            Id = 201,
+            RoomName = "Single Room",
+            IsActive = true,
+            Price = 300,
+            RoomProps = new List<RoomProp>()
+{
+            new RoomProp()
+            {
+                Id=1,
+                Name="Area",
+                Value="30"
+            },
+            new RoomProp()
+            {
+                Id=2,
+                Name="Occupancy",
+                Value="1"
+            }
+        }
+        });
+        AmenitiesList.Add(new Amenity
+        {
+            Id = 111,
+            Name = "Gym",
+            Description = "24x7 gym room is available."
+        });
+        AmenitiesList.Add(new Amenity
+        {
+            Id = 222,
+            Name = "Swimming Pool",
+            Description = "Pool room is open from 6am to 10pm."
+        });
+        AmenitiesList.Add(new Amenity
+        {
+            Id = 333,
+            Name = "Free Breakfast",
+            Description = "Enjoy free breakfast at out hotel."
+        });
+    }
+    protected void RoomSelectionCounterChanged(bool isRoomSelected)
+    {
+        if (isRoomSelected)
+        {
+            SelectedRooms++;
+        }
+        else
+        {
+            SelectedRooms--;
+        }
+    }
+    protected void AmenitySelectionChanged(string amenity)
+    {
+        SelectedAmenity = amenity;
+    }
+}

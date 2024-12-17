@@ -1,0 +1,23 @@
+﻿@page "/ParentComponent"
+<h3 class="text-warning">Parent Child Component</h3>
+<ChildComponent Title="This title passed as a parameter from Parent">
+    <ChildContent>Render Fragment From Parent</ChildContent>
+</ChildComponent>
+<ChildComponent Title="This title passed as a parameter from Parent">
+    @*<NewChildContent>New Content is Here</NewChildContent>*@
+</ChildComponent>
+<ChildComponent Title="This is Second Component">
+
+</ChildComponent>
+
+<AnotherChildComponent placeholder="text from parent" maxlength="3" ></AnotherChildComponent>
+
+@code {
+    // public Dictionary<string, object> InputAttributeFromParent { get; set; } = new Dictionary<string, object>()
+    // {
+    //     {"required","required"},
+    //     {"placeholder","Initial Text from Parent"},
+    //     {"maxlength",3},
+
+    // };
+}

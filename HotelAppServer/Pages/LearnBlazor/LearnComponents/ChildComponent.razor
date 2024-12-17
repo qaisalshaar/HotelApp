@@ -1,0 +1,27 @@
+﻿<div class="alert alert-info">@Title</div>
+@if (NewChildContent == null)
+{
+    @if (ChildContent == null)
+    {
+        <span>Here is Empty Render Fragment</span>
+    }
+    else
+    {
+        <span>@ChildContent</span>
+    }
+}
+else
+{
+    <span>@NewChildContent</span>
+}
+
+
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public RenderFragment NewChildContent { get; set; }
+}

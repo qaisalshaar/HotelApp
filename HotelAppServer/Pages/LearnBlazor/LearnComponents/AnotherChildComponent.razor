@@ -1,0 +1,36 @@
+﻿<div>
+    <h4>AnotherChildComponent</h4>
+
+
+    <input type="text" @attributes="InputAttribute" placeholder="text from Child" />
+</div>
+
+
+
+@code {
+    // [Parameter]
+    // public string Placeholder { get; set; }
+
+    // [Parameter]
+    // public string Required { get; set; } = "Required";
+
+
+    // [Parameter]
+    // public string MaxLength { get; set; } = "10";
+
+
+    // Attribute Splatting
+
+
+
+    // public Dictionary<string, object> InputAttribute { get; set; } = new Dictionary<string, object>()
+    // {
+    //     {"required","required"},
+    //     {"placeholder","Initial Text"},
+    //     {"maxlength",7},
+
+    // };
+    // تنسيط السبلاتينك
+    [Parameter(CaptureUnmatchedValues =true)]
+    public Dictionary<string, object> InputAttribute { get; set; } = new Dictionary<string, object>();
+}

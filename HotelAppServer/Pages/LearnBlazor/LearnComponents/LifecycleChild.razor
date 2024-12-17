@@ -1,0 +1,28 @@
+﻿<h3>LifecycleChild</h3>
+
+@foreach (var item in LifecycleMethods)
+{
+    @item;
+    <hr />
+}
+@code {
+    [Parameter]
+    public int CountValue { get; set; }
+    List<string> LifecycleMethods = new List<string>();
+
+    protected override void OnInitialized()
+    {
+        LifecycleMethods.Add("Child-OnInitialized is invoked");
+    }
+
+    protected override void OnParametersSet()
+    {
+        LifecycleMethods.Add("Child-OnParametersSet is invoked");
+    }
+    protected override bool ShouldRender()
+    {
+        LifecycleMethods.Add("Child-ShouldRender is invoked");
+        return true;
+    }
+}
+

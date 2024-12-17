@@ -1,0 +1,254 @@
+﻿@page "/hotel-amenity/create"
+@page "/hotel-amenity/edit/{Id:int}"
+
+@using DTOS
+@using Business.Repository.IRepository
+@using System.IO
+@using DataAccsess.Data.Models
+@using HotelAppServer.Services
+@using HotelAppServer.Services.IServices
+@inject IHotelAmenityRepository hotelamenityrepo
+@inject NavigationManager navmanger
+@inject IJSRuntime IJSRuntime
+
+
+
+<div class="row">
+    <h3 class="card-title text-info">@title Hotel Amenity</h3>
+    <div class="col-md-12">
+        <div>
+            @*   OnValidSubmit="UpsertAmenity" *@
+            <EditForm Model="AmenityModeldto" OnValidSubmit="UpsertAmenity">
+
+                <DataAnnotationsValidator />
+                @*< ValidationSummary /> *@
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText @bind-Value="AmenityModeldto.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>AmenityModeldto.Name" />
+                </div>
+
+                <div class="form-group">
+                    <label>Timming</label>
+                    <InputText @bind-Value="AmenityModeldto.Timming" class="form-control"></InputText>
+                    <ValidationMessage For="()=>AmenityModeldto.Timming" />
+                </div>
+
+                <div class="form-group">
+                    <label>Icon</label>
+                    <InputText @bind-Value="AmenityModeldto.Icon" class="form-control"></InputText>
+                    <ValidationMessage For="()=>AmenityModeldto.Icon" />
+                </div>
+
+
+                <div class="form-group" style="height:200px">
+                    <label>Description</label>
+                    @*    <InputTextArea @bind-Value="AmenityModeldto.Details" class="form-control"></InputTextArea> *@
+
+                    <BlazoredTextEditor @ref="@QuillHtml" Placeholder="Please Enter Amenity Details">
+                        <ToolbarContent>
+                            <select class="ql-header">
+                                <option selected=""></option>
+                                <option value="1"></option>
+                                <option value="2"></option>
+                                <option value="3"></option>
+                                <option value="4"></option>
+                                <option value="5"></option>
+                            </select>
+                            <span class="ql-formats">
+                                <button class="ql-bold"></button>
+                                <button class="ql-italic"></button>
+                                <button class="ql-underline"></button>
+                                <button class="ql-strike"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <select class="ql-color"></select>
+                                <select class="ql-background"></select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-list" value="ordered"></button>
+                                <button class="ql-list" value="bullet"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-link"></button>
+                            </span>
+                        </ToolbarContent>
+                        <EditorContent>
+
+
+                            @*  <h4>This Toolbar works with HTML</h4>
+                            <a href="http://BlazorHelpWebsite.com">
+                                BlazorHelpWebsite.com
+                            </a> *@
+                        </EditorContent>
+                    </BlazoredTextEditor>
+
+                </div>
+
+
+
+
+                <br />
+                <div class="form-group mt-5">
+
+                    <button class="btn btn-primary">@title Amenity</button>
+                    <NavLink href="hotel-amenity" class="btn btn-secondary">Back</NavLink>
+                </div>
+
+            </EditForm>
+
+
+        </div>
+    </div>
+</div>
+@* Code Directive*@
+@code {
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    public string title { get; set; } = "Create";
+
+    public HotelAmenityDTO AmenityModeldto { get; set; } = new HotelAmenityDTO();
+
+    public BlazoredTextEditor QuillHtml { get; set; } = new BlazoredTextEditor();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (Id != null)
+        {
+            // Update room
+
+            title = "Update";
+
+            AmenityModeldto = await hotelamenityrepo.GetHotelAmenityByID(Id.Value);
+
+
+        }
+        else
+        {
+            // Create room
+
+
+            AmenityModeldto = new HotelAmenityDTO();
+
+
+
+
+        }
+
+    }
+
+
+
+    // to let    QuillHtml work
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        //  فاخرج من الميثود firstRender   في حالة انه ليس
+        if (!firstRender) return;
+        // اعمل لووب لا نهائي  بالاعتماد على قيمة
+        bool loading = true;
+
+        while (loading)
+        {
+            try
+            {
+                // التاكد من وجود نص في التفاصيل
+
+                if (!string.IsNullOrEmpty(AmenityModeldto.Description))
+                {
+                    // في حالة ال update
+                    await QuillHtml.LoadHTMLContent(AmenityModeldto.Description);
+                    // StateHasChanged();
+                    // بعد عرض التفاصيل اقوم بالخروج من اللوب
+
+                }
+                // في حالة ال Crrate
+                loading = false;
+            }
+            catch
+            {
+                // يحمل ال html code  مرة ثانية
+                await Task.Delay(10);
+                // throw;
+                // ليتم تحميل التفاصيل مرة ثانية
+                loading = true;
+            }
+        }
+
+
+
+        // return base.OnAfterRenderAsync(firstRender);
+    }
+
+
+
+
+    private async Task UpsertAmenity()
+    {
+        try
+        {
+
+            // RoomModeldto.Details = "Form Submited";
+
+            bool IsUniqe = await hotelamenityrepo.IsHotelAmenityUnique(AmenityModeldto.Name, AmenityModeldto.Id);
+            if (!IsUniqe)
+            {
+
+
+                await IJSRuntime.DisplaytoasterError("The Amenity Name is Already exist");
+                return;
+            }
+
+
+            if (AmenityModeldto.Id != 0 && title == "Update")
+            {
+                // Update
+                // Update without image
+
+                var UpdatedRoom = await hotelamenityrepo.UpdateHotelAmenity(AmenityModeldto.Id, AmenityModeldto);
+
+                // get texteditor values  QuillHtml
+
+                AmenityModeldto.Description = await QuillHtml.GetHTML();
+
+
+
+
+                navmanger.NavigateTo("hotel-amenity");
+
+
+                await IJSRuntime.DisplaytoasterSuccess("Amenity Updated Successfully ");
+            }
+            else
+            {
+                // Create
+                // get texteditor values  QuillHtml
+
+                AmenityModeldto.Description = await QuillHtml.GetHTML();
+                var createdRoom = await hotelamenityrepo.CreateHotelAmenity(AmenityModeldto);
+
+
+                navmanger.NavigateTo("hotel-amenity");
+
+                // await IJSRuntime.DisplaytoasterSuccess("Successfully Operation");
+                // await IJSRuntime.DisplaytoasterSuccess(SD.Success_Operation);
+                await IJSRuntime.DisplaytoasterSuccess("Amenity Created Successfully ");
+
+            }
+        }
+        catch (Exception ex)
+        {
+
+            await IJSRuntime.DisplaytoasterError(ex.Message);
+        }
+
+    }
+
+
+
+
+
+
+}

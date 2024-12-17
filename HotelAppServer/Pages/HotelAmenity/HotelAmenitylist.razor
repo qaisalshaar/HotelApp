@@ -1,0 +1,108 @@
+﻿@page "/hotel-amenity"
+@using Business.Repository.IRepository
+@using DTOS
+@inject IHotelAmenityRepository hotelamenityrepo
+
+<h3>Hotel Amenity List</h3>
+
+<div class="row mt-3">
+    <div class="col-8">
+        <h3 class="card-title text-info">Hotel Amenity</h3>
+    </div>
+    <div class="col-3 offset-1">
+        <NavLink href="hotel-amenity/create" class="btn btn-info form-control">Add New Amenity</NavLink>
+    </div>
+</div>
+
+
+
+<div class="row mt-4">
+    <div class="col-12">
+        <table class="table table-bordered table-hover text-center">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                 @*    <th>Description</th> *@
+                    <th>Timming</th>
+                    <th>Icon</th>
+                    <th>
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @if (AmenityList.Any())
+                {
+
+                    @foreach (var amenity in AmenityList)
+                    {
+                        <tr>
+                            <td>@amenity.Name</td>
+                           @*  <td>@amenity.Description</td> *@
+                            <td>@amenity.Timming</td>
+                            <td>@amenity.Icon</td>
+                            <td>
+                                @*    @onclick="()=>DeleteRoom(room.Id)" *@
+                                <NavLink href="@($"hotel-amenity/edit/{amenity.Id}")" class="btn btn-primary"> Edit</NavLink>
+                                <NavLink class="btn btn-danger" @onclick="()=>DeleteRoom(amenity.Id)"> Delete</NavLink>
+                            </td>
+
+                        </tr>
+                    }
+                }
+                else
+                {
+
+                    <tr>
+                        <th colspan="5">No Amenitys</th>
+                    </tr>
+                }
+
+
+
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+@code {
+
+
+    public IEnumerable<HotelAmenityDTO> AmenityList { get; set; } = new List<HotelAmenityDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AmenityList = await hotelamenityrepo.GetAllHotelAmenitys();
+    }
+
+
+    public async Task DeleteRoom(int? roomId)
+    {
+        // // اظهار رسالة الحذف
+        // bool DeleteConfirmResult = await IJSRuntime.ShowConfirm();
+        // if (DeleteConfirmResult && roomId != null)
+        // {
+        //     // الحصول على الغرفة المراد حذفها
+        //     HotelRoomDTO RoomToDelete = await hotelroomrepo.GetHotelRoomByID(roomId.Value);
+        //     foreach (var image in RoomToDelete.RoomImages)
+        //     {
+        //         // حذف المسار الخاص بكل صورة خاصة بالغرفة
+        //         var imageName = image.ImageUrl.Replace($"{navigationManager.BaseUri}RoomImages/", "");
+        //         fileUpload.DeleteFile(imageName);
+        //     }
+        //     //RoomImages حذف جميع الصور من الغرفة قي مجلد
+        //     await hotelroomrepo.DeleteHotelRoom(roomId.Value);
+        //     // جلب بيانات كل الغرف بعد الحذف
+        //     RoomList = await hotelroomrepo.GetAllHotelRooms();
+        //     await IJSRuntime.DisplaytoasterSuccess("Room deleted successfully");
+
+        // }
+
+    }
+
+
+}

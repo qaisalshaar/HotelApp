@@ -1,0 +1,504 @@
+﻿@page "/hotel-room/create"
+@page "/hotel-room/edit/{Id:int}"
+@using DTOS
+@using Business.Repository.IRepository
+@using System.IO
+@using DataAccsess.Data.Models
+@using HotelAppServer.Services
+@using HotelAppServer.Services.IServices
+@inject IHotelRomeRepository hotelroomrepo
+@inject NavigationManager navmanger
+@inject IJSRuntime IJSRuntime
+@inject IFileUpload fileUpload
+@inject IRoomimageRepository RoomimageRepository
+
+<div class="row">
+    <h3 class="card-title text-info">@title Hotel Room</h3>
+    <div class="col-md-12">
+        <div>
+            <EditForm Model="RoomModeldto" OnValidSubmit="UpsertRoom">
+                <DataAnnotationsValidator />
+                @*     < ValidationSummary /> *@
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText @bind-Value="RoomModeldto.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>RoomModeldto.Name" />
+                </div>
+
+                <div class="form-group">
+                    <label>Occupancy</label>
+                    <InputNumber @bind-Value="RoomModeldto.Occupancy" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>RoomModeldto.Occupancy" />
+                </div>
+
+                <div class="form-group">
+                    <label>Price</label>
+                    <InputNumber @bind-Value="RoomModeldto.Price" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>RoomModeldto.Price" />
+                </div>
+
+                <div class="form-group">
+                    <label>Area</label>
+                    <InputText @bind-Value="RoomModeldto.Area" class="form-control"></InputText>
+                </div>
+                <div class="form-group" style="height:200px">
+                    <label>Details</label>
+                    @*    <InputTextArea @bind-Value="RoomModeldto.Details" class="form-control"></InputTextArea> *@
+
+                    <BlazoredTextEditor @ref="@QuillHtml" Placeholder="Please Enter Room Details">
+                        <ToolbarContent>
+                            <select class="ql-header">
+                                <option selected=""></option>
+                                <option value="1"></option>
+                                <option value="2"></option>
+                                <option value="3"></option>
+                                <option value="4"></option>
+                                <option value="5"></option>
+                            </select>
+                            <span class="ql-formats">
+                                <button class="ql-bold"></button>
+                                <button class="ql-italic"></button>
+                                <button class="ql-underline"></button>
+                                <button class="ql-strike"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <select class="ql-color"></select>
+                                <select class="ql-background"></select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-list" value="ordered"></button>
+                                <button class="ql-list" value="bullet"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-link"></button>
+                            </span>
+                        </ToolbarContent>
+                        <EditorContent>
+                            @*  <h4>This Toolbar works with HTML</h4>
+                            <a href="http://BlazorHelpWebsite.com">
+                                BlazorHelpWebsite.com
+                            </a> *@
+                        </EditorContent>
+                    </BlazoredTextEditor>
+
+                </div>
+
+
+
+                <div class="form-group" style="padding-top:75px">
+
+                    <InputFile multiple OnChange="UploadImages"></InputFile>
+                </div>
+                <div class="row mb-3">
+                    @*  add ShowSpiner *@
+                    @*   https://docs.fontawesome.com/v5/web/style/animate *@
+                    @if(ShowSpiner){
+                        <div class="col-md-12">
+
+                            <span>
+                                <i class="fas fa-spinner fa-pulse"></i>
+                            </span>
+                        </div>
+                    }
+
+                    @*                      التاكد من وجود صور في مسار الصور *@
+
+                    @if (RoomModeldto.ImagesUrl != null && RoomModeldto.ImagesUrl.Count > 0)
+                    {
+                        int serial = 1;
+                        foreach (var imageUrl in RoomModeldto.ImagesUrl)
+                        {
+                            <div class="col-xl-2 col col-lg-3 col-md-4 col-sm-6 mt-3">
+                                <img src="@imageUrl" class="room-image" />
+                                <span class="room-serial">@serial</span>
+
+                                @*    without delete *@
+                                @*   <button type="button" class="btn btn-danger mt-1 room-delete">
+                                    X
+                                </button> *@
+
+                                @*    with delete *@
+                                <button type="button" @onclick="()=>DeleteImage(imageUrl)" class="btn btn-danger mt-1 room-delete">
+                                    X
+                                </button>
+                            </div>
+                            serial++;
+                        }
+
+                    }
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <button class="btn btn-primary">@title Room</button>
+                    <NavLink href="hotel-room" class="btn btn-secondary">Back</NavLink>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+@* Code Directive*@
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    public string title { get; set; } = "Create";
+    public string check1 { get; set; } = "";
+    public HotelRoomDTO RoomModeldto { get; set; } = new HotelRoomDTO();
+    public RoomImageDTO RoomImagedto { get; set; } = new RoomImageDTO();
+    public bool ShowSpiner { get; set; }
+    public BlazoredTextEditor QuillHtml { get; set; } = new BlazoredTextEditor();
+    // الاحتفاظ بعنواين الصور المراد حذفها
+
+    public List<string> DeletedImagesUrls { get; set; } = new List<string>();
+
+
+    // lifecycle الخاصة ب OnInitialized
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (Id != null)
+        {
+            // Update room
+
+            title = "Update";
+
+            RoomModeldto = await hotelroomrepo.GetHotelRoomByID(Id.Value);
+            // عرض الصور
+
+            if (RoomModeldto?.RoomImages != null)
+            {
+                // فيها صور
+                // عرض الصور الخاصة بالغرفة
+                RoomModeldto.ImagesUrl = RoomModeldto.RoomImages.Select(ri => ri.ImageUrl).ToList();
+            }
+
+        }
+        else
+        {
+            // Create room
+
+
+            RoomModeldto = new HotelRoomDTO();
+
+
+
+
+        }
+
+    }
+
+    // to let    QuillHtml work
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        //  فاخرج من الميثود firstRender   في حالة انه ليس
+        if (!firstRender) return;
+        // اعمل لووب لا نهائي  بالاعتماد على قيمة
+        bool loading = true;
+
+        while (loading)
+        {
+            try
+            {
+                // التاكد من وجود نص في التفاصيل
+
+                if (!string.IsNullOrEmpty(RoomModeldto.Details))
+                {
+                    // في حالة ال update
+                    await QuillHtml.LoadHTMLContent(RoomModeldto.Details);
+                    // StateHasChanged();
+                    // بعد عرض التفاصيل اقوم بالخروج من اللوب
+                   
+                }
+                // في حالة ال Crrate
+                loading = false;
+            }
+            catch 
+            {
+                // يحمل ال html code  مرة ثانية
+                await Task.Delay(10);
+                // throw;
+                // ليتم تحميل التفاصيل مرة ثانية
+                loading = true;
+            }
+        }
+
+      
+
+        // return base.OnAfterRenderAsync(firstRender);
+    }
+
+
+
+    private async Task UpsertRoom()
+    {
+
+
+        try
+        {
+
+            // RoomModeldto.Details = "Form Submited";
+
+            bool IsUniqe = await hotelroomrepo.IsRoomUnique(RoomModeldto.Name, RoomModeldto.Id);
+            if (!IsUniqe)
+            {
+
+
+                await IJSRuntime.DisplaytoasterError("The Room Name is Already exist");
+                return;
+            }
+
+            if (RoomModeldto.Id != 0 && title == "Update")
+            {
+                // Update
+                // Update without image
+
+                // var UpdatedRoom = await hotelroomrepo.UpdateHotelRoom(RoomModeldto.Id, RoomModeldto);
+
+                // get texteditor values  QuillHtml
+
+                RoomModeldto.Details = await QuillHtml.GetHTML();
+                // Update with image
+                var UpdatedRoom = await hotelroomrepo.UpdateHotelRoom(RoomModeldto.Id, RoomModeldto);
+
+                // التاكد من وجود صور للغرفة
+                if (RoomModeldto.ImagesUrl != null && RoomModeldto.ImagesUrl.Any())
+                {
+
+                    // هل في عنواين صور محضرة للحذف
+                    if (DeletedImagesUrls != null && DeletedImagesUrls.Any())
+                    {
+                        // حذف الصور من المجلد
+                        foreach (var delimageurl in DeletedImagesUrls)
+                        {
+                            // الحصول على اسم الصورة
+                            var imageName = delimageurl.Replace($"RoomImages/", "");
+                            var result = fileUpload.DeleteFile(imageName);
+
+                            // حذف مسار الصورة من قاعدة البيانات
+                            await RoomimageRepository.DeleteImageByImageUrl(delimageurl);
+                        }
+
+                    }
+
+
+
+                    await AddRoomImage(UpdatedRoom);
+                }
+
+
+
+                navmanger.NavigateTo("hotel-room");
+
+
+                await IJSRuntime.DisplaytoasterSuccess("Room Updated Successfully ");
+            }
+            else
+            {
+                // Create
+                // get texteditor values  QuillHtml
+
+                RoomModeldto.Details = await QuillHtml.GetHTML();
+                var createdRoom = await hotelroomrepo.CreateHotelRoom(RoomModeldto);
+
+                // أضافة صور للغرفة
+
+                await AddRoomImage(createdRoom);
+
+
+                navmanger.NavigateTo("hotel-room");
+
+                // await IJSRuntime.DisplaytoasterSuccess("Successfully Operation");
+                // await IJSRuntime.DisplaytoasterSuccess(SD.Success_Operation);
+                await IJSRuntime.DisplaytoasterSuccess("Room Created Successfully ");
+
+            }
+        }
+        catch (Exception ex)
+        {
+
+            await IJSRuntime.DisplaytoasterError(ex.Message);
+        }
+
+    }
+
+    private async Task AddRoomImage(HotelRoomDTO roomDetails)
+    {
+
+        // اعمل لوب على جميع الصور Imagesurl
+        foreach (var imageurl in RoomModeldto.ImagesUrl)
+        {
+
+            //  التاكد عدم اضافة الصور  وتكرار في حال كانت مسار الصورة موجود في حال ال Update
+            // المسار هل موجود داخل الغرفة
+            // where   لجلب اكثر من صورة
+            if (RoomModeldto.RoomImages == null || RoomModeldto.RoomImages.Where(ri => ri.ImageUrl == imageurl).Count() == 0)
+            {
+                // اي الصورة جديدة
+
+                // نضيف سجل خاص بالصورة يتكون من حقلين
+                RoomImagedto = new RoomImageDTO()
+                    {
+                        RoomId = roomDetails.Id,
+                        ImageUrl = imageurl
+                    };
+
+                // Create Room Image
+                await RoomimageRepository.CreateRoomImage(RoomImagedto);
+            }
+
+
+        }
+
+    }
+
+    private async Task UploadImages(InputFileChangeEventArgs e)
+    {
+        ShowSpiner = true;
+        try
+        {
+            var imagesforuploading = new List<string>();
+
+            // نتاكد هل تم رفع صورة واحدة او اكثر
+            // if (e.GetMultipleFiles(16).Count > 0)
+          // 16 تحديد  عدد الفايلات المرفوعة
+            if (e.GetMultipleFiles().Count > 0)
+            {
+                // الحصول على معلومات كل فايل
+                // ومعرفة كل extesion  لكل فايل
+                foreach (var image in e.GetMultipleFiles())
+                {
+
+                    FileInfo fileInfo = new FileInfo(image.Name);
+
+                    // اختبار لل extesion
+
+                    if (fileInfo.Extension.ToLower() == ".jpg" ||
+                    fileInfo.Extension.ToLower() == ".png" ||
+                    fileInfo.Extension.ToLower() == ".jpeg")
+
+                    {
+                        // نعمل ابلود للفايل
+                        // الحصول على المسار الخاص بالصورة
+                        var uploadesImagePath = await fileUpload.UploadFile(image);
+
+                        // والان اخزن المسار الخاص بالصورة في  اللست imagesforuploading
+
+
+                           imagesforuploading.Add(uploadesImagePath);
+                      
+
+                           
+                        
+                     
+
+
+                    }
+                    else
+                    {
+
+                        await IJSRuntime.DisplaytoasterError("Please Select .jpg/.png/.jpeg File Only");
+                        return;
+                    }
+                }
+
+
+                // imagesforuploading اختبار في بيانات داخل
+
+                if (imagesforuploading.Any())
+                {
+                    // التاكد من وجود صور اخرى للغرفة المحددة
+                    if (RoomModeldto.ImagesUrl != null && RoomModeldto.ImagesUrl.Any())
+                    {
+                        // وجود صور
+                        // اضافة جميع الصور المختارة
+                        // add range  اكثر من صورة
+                        RoomModeldto.ImagesUrl.AddRange(imagesforuploading);
+                    }
+                    else
+                    {
+                        // يعني عدم وجود اي صور لهذه الغرفة
+                        // فيتم اضافة اول صورة
+                        // تفريغ اللست
+
+
+
+
+                        RoomModeldto.ImagesUrl = new List<string>();
+                        RoomModeldto.ImagesUrl.AddRange(imagesforuploading);
+
+                    }
+
+
+
+
+                }
+                else
+                {
+                    await IJSRuntime.DisplaytoasterError("Image Upladed Failed");
+                    return;
+                }
+
+
+            }
+
+            ShowSpiner = false;
+        }
+        catch (Exception ex)
+        {
+            ShowSpiner = false;
+            await IJSRuntime.DisplaytoasterError(ex.Message);
+        }
+    }
+
+    private async Task DeleteImage(string Imageurl)
+    {
+        try
+        {
+            // الحصول على الانكس الخاص بالصورة
+            var imageIndex = RoomModeldto.ImagesUrl.FindIndex(x => x == Imageurl);
+            // الحصول على اسم الصورة
+            var imageName = Imageurl.Replace($"{navmanger.BaseUri}RoomImages/", "");
+            // check if in add or udate
+            if (RoomModeldto.Id == 0 && title == "Create")
+            {
+                // Create
+                var result = fileUpload.DeleteFile(imageName);
+
+                if (result == true)
+                {
+
+                    await IJSRuntime.DisplaytoasterSuccess("Image Deleted Successfully");
+                }
+            }
+            else
+            {
+                // Update
+
+                // في حال وجود خطا
+                DeletedImagesUrls ??= new List<string>();
+                // نضيف الصور في اللست
+
+                DeletedImagesUrls.Add(Imageurl);
+
+
+
+            }
+
+            // delete ImageURL from table
+            // حذف الصورة حسب الانكس
+            RoomModeldto.ImagesUrl.RemoveAt(imageIndex);
+        }
+        catch (Exception ex)
+        {
+
+            await IJSRuntime.DisplaytoasterError(ex.Message);
+        }
+
+    }
+
+
+}
